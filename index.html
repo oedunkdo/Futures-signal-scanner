@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FUTURES SIGNAL SCANNER — 隔日沖 & 波段單出手點系統</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-base: #080c10;
+  --bg-panel: #0d1117;
+  --bg-card: #111820;
+  --bg-input: #0a0f14;
+  --border: rgba(255,255,255,0.07);
+  --border-bright: rgba(255,255,255,0.15);
+  --amber: #f0a500;
+  --amber-dim: rgba(240,165,0,0.15);
+  --amber-glow: rgba(240,165,0,0.08);
+  --green: #00c97d;
+  --green-dim: rgba(0,201,125,0.12);
+  --red: #ff4757;
+  --red-dim: rgba(255,71,87,0.12);
+  --blue: #4d9fff;
+  --blue-dim: rgba(77,159,255,0.12);
+  --text-primary: #e8edf2;
+  --text-secondary: #8899aa;
+  --text-dim: #445566;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--mono);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Subtle scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ─── TICKER BAR ─── */
+.ticker-bar {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--amber);
+  padding: 6px 0;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.ticker-track {
+  display: flex;
+  gap: 48px;
+  animation: ticker 30s linear infinite;
+  white-space: nowrap;
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+.ticker-label { color: var(--text-secondary); }
+.ticker-val { color: var(--amber); }
+.ticker-chg.up { color: var(--green); }
+.ticker-chg.dn { color: var(--red); }
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ─── HEADER ─── */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: var(--bg-panel);
+}
+.logo-block { display: flex; flex-direction: column; gap: 3px; }
+.logo-main {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--amber);
+}
+.logo-sub {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-secondary);
+  font-weight: 300;
+}
+.header-badges {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.hbadge {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  padding: 4px 10px;
+  border: 1px solid;
+}
+.hbadge.amber { border-color: var(--amber); color: var(--amber); }
+.hbadge.green { border-color: var(--green); color: var(--green); }
+.clock {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+
+/* ─── LAYOUT ─── */
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: calc(100vh - 89px);
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  padding: 24px 0;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-section { margin-bottom: 8px; }
+.sidebar-heading {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  padding: 0 20px 8px;
+  font-weight: 500;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+}
+.nav-item:hover { background: rgba(240,165,0,0.05); color: var(--text-primary); }
+.nav-item.active { border-left-color: var(--amber); color: var(--amber); background: var(--amber-glow); }
+.nav-dot {
+  width: 6px; height: 6px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.nav-item.active .nav-dot { background: var(--amber); }
+
+.sidebar-divider { height: 1px; background: var(--border); margin: 12px 20px; }
+
+.status-block { padding: 16px 20px; margin-top: auto; }
+.status-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
+.status-key { color: var(--text-dim); }
+.status-val { color: var(--amber); }
+.status-val.ok { color: var(--green); }
+
+/* ─── MAIN ─── */
+.main { padding: 28px 32px; overflow-y: auto; }
+
+.panel-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-title { font-size: 16px; font-weight: 500; letter-spacing: 0.08em; color: var(--text-primary); }
+.panel-sub { font-size: 11px; color: var(--text-secondary); margin-bottom: 2px; }
+.panel-tag {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+}
+
+/* ─── SECTION LABEL ─── */
+.sec-label {
+  font-size: 9px;
+  letter-spacing: 0.25em;
+  color: var(--amber);
+  font-weight: 500;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ─── INPUT GRID ─── */
+.input-grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+.input-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+.input-grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 20px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.field input, .field select {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+  width: 100%;
+}
+.field input:focus, .field select:focus { border-color: var(--amber); }
+.field input::placeholder { color: var(--text-dim); font-weight: 300; }
+.field select option { background: var(--bg-card); }
+
+/* ─── CHECKBOX ROW ─── */
+.check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+.chk-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  user-select: none;
+}
+.chk-label:hover { border-color: var(--border-bright); color: var(--text-primary); }
+.chk-label input[type=checkbox] { display: none; }
+.chk-box {
+  width: 14px; height: 14px;
+  border: 1px solid var(--text-dim);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.chk-label input:checked ~ .chk-box {
+  background: var(--amber);
+  border-color: var(--amber);
+}
+.chk-label input:checked ~ .chk-box::after { content: '✓'; font-size: 10px; color: #000; line-height: 1; }
+.chk-label input:checked ~ span { color: var(--amber); }
+
+/* ─── RUN BUTTON ─── */
+.btn-run {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.btn-run::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--amber);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s;
+  z-index: 0;
+}
+.btn-run:hover::before { transform: scaleX(1); }
+.btn-run:hover { color: #000; }
+.btn-run span { position: relative; z-index: 1; }
+
+/* ─── SUMMARY BAR ─── */
+.summary-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 2fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.sum-cell {
+  background: var(--bg-card);
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.sum-num { font-size: 28px; font-weight: 600; line-height: 1; }
+.sum-num.bull { color: var(--green); }
+.sum-num.bear { color: var(--red); }
+.sum-num.neutral { color: var(--text-secondary); }
+.sum-lbl { font-size: 9px; letter-spacing: 0.15em; color: var(--text-dim); }
+.verdict-cell { background: var(--bg-card); padding: 14px 20px; display: flex; align-items: center; justify-content: center; }
+.verdict-text { font-size: 14px; font-weight: 500; letter-spacing: 0.06em; }
+.verdict-text.bull { color: var(--green); }
+.verdict-text.bear { color: var(--red); }
+.verdict-text.neutral { color: var(--text-secondary); }
+
+/* ─── SIGNAL CARDS ─── */
+.signal-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 28px; }
+.signal-card {
+  background: var(--bg-card);
+  padding: 16px;
+  position: relative;
+  transition: background 0.15s;
+}
+.signal-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--text-dim);
+}
+.signal-card.bull::before { background: var(--green); }
+.signal-card.bear::before { background: var(--red); }
+.sig-num { font-size: 9px; letter-spacing: 0.2em; color: var(--text-dim); margin-bottom: 6px; }
+.sig-name { font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4; min-height: 32px; }
+.sig-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  padding: 4px 8px;
+  border: 1px solid;
+  margin-bottom: 10px;
+}
+.sig-status.bull { color: var(--green); border-color: var(--green); background: var(--green-dim); }
+.sig-status.bear { color: var(--red); border-color: var(--red); background: var(--red-dim); }
+.sig-status.neutral { color: var(--text-dim); border-color: var(--border); background: transparent; }
+.sig-detail { font-size: 11px; color: var(--text-dim); line-height: 1.6; border-top: 1px solid var(--border); padding-top: 8px; font-weight: 300; }
+
+/* ─── VISION PANEL ─── */
+.upload-zone {
+  border: 1px dashed var(--border-bright);
+  padding: 40px 24px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+  margin-bottom: 16px;
+  background: var(--bg-input);
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--amber); background: var(--amber-glow); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 32px; margin-bottom: 10px; filter: grayscale(0.3); }
+.upload-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; letter-spacing: 0.06em; }
+.upload-hint { font-size: 11px; color: var(--text-dim); }
+
+.preview-wrap { position: relative; margin-bottom: 16px; border: 1px solid var(--border); }
+.preview-wrap img { width: 100%; display: block; max-height: 380px; object-fit: contain; background: #000; }
+.preview-remove {
+  position: absolute; top: 8px; right: 8px;
+  width: 28px; height: 28px;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.preview-remove:hover { border-color: var(--red); color: var(--red); }
+
+.btn-analyze {
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: 1px solid var(--border-bright);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 24px;
+}
+.btn-analyze:not(:disabled):hover { border-color: var(--amber); color: var(--amber); }
+.btn-analyze:disabled { opacity: 0.3; cursor: not-allowed; }
+.btn-analyze.active { border-color: var(--amber); color: var(--amber); }
+
+.ai-loading {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+.spinner {
+  width: 16px; height: 16px;
+  border: 1px solid var(--border-bright);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.ai-result-block {
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+.ai-result-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px;
+  background: var(--bg-input);
+  border-bottom: 1px solid var(--border);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.ai-result-header .dot-green { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+.ai-result-body { padding: 16px 20px; font-size: 12px; line-height: 1.85; color: var(--text-secondary); white-space: pre-wrap; font-weight: 300; }
+.ai-result-body strong { color: var(--amber); font-weight: 500; }
+
+.ai-entry-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 24px; }
+.entry-cell { background: var(--bg-card); padding: 14px 16px; }
+.entry-label { font-size: 9px; letter-spacing: 0.2em; color: var(--text-dim); margin-bottom: 6px; }
+.entry-val { font-size: 12px; color: var(--text-primary); line-height: 1.5; font-weight: 300; }
+
+.error-box {
+  padding: 12px 16px;
+  border: 1px solid var(--red);
+  background: var(--red-dim);
+  color: var(--red);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+/* ─── FOOTER ─── */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-panel);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.footer-warning { color: var(--red); opacity: 0.7; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1100px) {
+  .signal-grid { grid-template-columns: repeat(2,1fr); }
+  .summary-bar { grid-template-columns: 1fr 1fr 1fr; }
+  .summary-bar .verdict-cell { grid-column: 1 / -1; }
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .main { padding: 20px 20px; }
+  .input-grid-4 { grid-template-columns: 1fr 1fr; }
+  .site-header { padding: 16px 20px; }
+}
+@media (max-width: 600px) {
+  .input-grid-3 { grid-template-columns: 1fr 1fr; }
+  .check-grid { grid-template-columns: 1fr; }
+  .ai-entry-grid { grid-template-columns: 1fr; }
+}
+
+/* Panel visibility */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* Animate in */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.signal-card { animation: fadeUp 0.3s ease both; }
+.signal-card:nth-child(1) { animation-delay: 0.05s; }
+.signal-card:nth-child(2) { animation-delay: 0.1s; }
+.signal-card:nth-child(3) { animation-delay: 0.15s; }
+.signal-card:nth-child(4) { animation-delay: 0.2s; }
+.signal-card:nth-child(5) { animation-delay: 0.25s; }
+.signal-card:nth-child(6) { animation-delay: 0.3s; }
+.signal-card:nth-child(7) { animation-delay: 0.35s; }
+.signal-card:nth-child(8) { animation-delay: 0.4s; }
+</style>
+</head>
+<body>
+
+<!-- TICKER BAR -->
+<div class="ticker-bar">
+  <div class="ticker-track" id="tickerTrack">
+    <div class="ticker-item"><span class="ticker-label">TX</span><span class="ticker-val" id="txPrice">—</span><span class="ticker-chg" id="txChg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">TAIEX</span><span class="ticker-val">—</span><span class="ticker-chg up">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">USD/TWD</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">VIX</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">NASDAQ</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">S&P 500</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">GOLD</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">TX</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">TAIEX</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">USD/TWD</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">VIX</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">NASDAQ</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">S&P 500</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+    <div class="ticker-item"><span class="ticker-label">GOLD</span><span class="ticker-val">—</span><span class="ticker-chg">—</span></div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="logo-block">
+    <div class="logo-main">FSS · FUTURES SIGNAL SCANNER</div>
+    <div class="logo-sub">隔日沖 & 波段單出手點系統 · 技術訊號研判引擎</div>
+  </div>
+  <div class="header-badges">
+    <span class="hbadge amber">TAIWAN FUTURES</span>
+    <span class="hbadge green">AI VISION READY</span>
+    <div class="clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">ANALYSIS MODE</div>
+      <div class="nav-item active" onclick="setPanel('manual', this)">
+        <div class="nav-dot"></div>隔日沖模式
+      </div>
+      <div class="nav-item" onclick="setPanel('swing', this)">
+        <div class="nav-dot"></div>波段單模式
+      </div>
+      <div class="nav-item" onclick="setPanel('vision', this)">
+        <div class="nav-dot"></div>AI 圖形判讀模式
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-heading">隔日沖 · INTRADAY</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>01 · 趨勢線突破跌破</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>02 · 島型反轉缺口</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>03 · 45度角線</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>04 · 底部大量換手</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>05 · RSI背離雙底</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>06 · RSI臨界領先</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>07 · 價乖離領先</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>08 · 布林出軌</div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">波段單 · SWING</div>
+      <div class="nav-item" style="cursor:default; font-size:11px; padding:6px 20px;"><div class="nav-dot"></div>S1 · 三線合一向上/向下</div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="status-block">
+      <div class="sidebar-heading">SYSTEM STATUS</div>
+      <div class="status-row"><span class="status-key">ENGINE</span><span class="status-val ok">ONLINE</span></div>
+      <div class="status-row"><span class="status-key">AI VISION</span><span class="status-val ok">READY</span></div>
+      <div class="status-row"><span class="status-key">VERSION</span><span class="status-val">v3.0</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- ═══ MANUAL PANEL ═══ -->
+    <div id="panel-manual" class="panel active">
+      <div class="panel-header">
+        <div>
+          <div class="panel-sub">MANUAL INPUT MODE</div>
+          <div class="panel-title">數值輸入 — 訊號掃描</div>
+        </div>
+        <span class="panel-tag">QUANTITATIVE</span>
+      </div>
+
+      <div class="sec-label">PRICE DATA</div>
+      <div class="input-grid-4">
+        <div class="field"><label>TODAY CLOSE</label><input id="todayClose" type="number" placeholder="20500" value="20500"></div>
+        <div class="field"><label>TODAY HIGH</label><input id="todayHigh" type="number" placeholder="20600" value="20600"></div>
+        <div class="field"><label>TODAY LOW</label><input id="todayLow" type="number" placeholder="20400" value="20400"></div>
+        <div class="field"><label>VOLUME</label><input id="todayVol" type="number" placeholder="150000" value="150000"></div>
+      </div>
+
+      <div class="sec-label">MOVING AVG & BOLLINGER</div>
+      <div class="input-grid-3">
+        <div class="field"><label>MA5 (昨日五日均)</label><input id="ma5" type="number" placeholder="20300" value="20300"></div>
+        <div class="field"><label>BB UPPER (布林上軌)</label><input id="bbUpper" type="number" placeholder="20700" value="20700"></div>
+        <div class="field"><label>BB LOWER (布林下軌)</label><input id="bbLower" type="number" placeholder="20100" value="20100"></div>
+      </div>
+
+      <div class="sec-label">RSI PARAMETERS</div>
+      <div class="input-grid-4">
+        <div class="field"><label>RSI(3) TODAY</label><input id="rsi3" type="number" placeholder="72" value="72"></div>
+        <div class="field"><label>RSI(6) TODAY</label><input id="rsi6" type="number" placeholder="55" value="55"></div>
+        <div class="field"><label>RSI(3) PREV</label><input id="rsi3Prev" type="number" placeholder="45" value="45"></div>
+        <div class="field"><label>RSI(6) PREV</label><input id="rsi6Prev" type="number" placeholder="48" value="48"></div>
+      </div>
+
+      <div class="sec-label">PATTERN RECOGNITION</div>
+      <div class="check-grid">
+        <label class="chk-label"><input type="checkbox" id="chkTrend"><div class="chk-box"></div><span>突破或跌破長期趨勢線</span></label>
+        <label class="chk-label"><input type="checkbox" id="chkIsland"><div class="chk-box"></div><span>島型反轉或缺口出現</span></label>
+        <label class="chk-label"><input type="checkbox" id="chkLine45"><div class="chk-box"></div><span>突破或跌破 45 度角線</span></label>
+        <label class="chk-label"><input type="checkbox" id="chkVolume"><div class="chk-box"></div><span>底部出大量換手成功</span></label>
+      </div>
+      <div class="input-grid-2" style="margin-bottom:24px;">
+        <div class="field"><label>趨勢線方向</label>
+          <select id="selTrend"><option value="bull">突破向上 (多方)</option><option value="bear">跌破向下 (空方)</option></select>
+        </div>
+        <div class="field"><label>缺口 / 45度線方向</label>
+          <select id="selIsland"><option value="bull">向上突破 (多方)</option><option value="bear">向下跌破 (空方)</option></select>
+        </div>
+      </div>
+
+      <button class="btn-run" onclick="runScan()"><span>▶ &nbsp; EXECUTE SIGNAL SCAN &nbsp; — &nbsp; 執行訊號掃描</span></button>
+
+      <div id="summaryBar" style="display:none" class="summary-bar">
+        <div class="sum-cell"><div class="sum-num bull" id="bullCount">0</div><div class="sum-lbl">LONG SIGNALS</div></div>
+        <div class="sum-cell"><div class="sum-num bear" id="bearCount">0</div><div class="sum-lbl">SHORT SIGNALS</div></div>
+        <div class="sum-cell"><div class="sum-num neutral" id="neutralCount">0</div><div class="sum-lbl">NEUTRAL</div></div>
+        <div class="verdict-cell sum-cell"><div class="verdict-text neutral" id="verdictBox">—</div></div>
+      </div>
+
+      <div id="signalGrid" class="signal-grid" style="display:none;"></div>
+
+      <div style="font-size:10px; color:var(--text-dim); letter-spacing:0.08em; padding:12px 0; border-top:1px solid var(--border);">
+        ⚠ DISCLAIMER · 本系統僅供技術分析參考，不構成任何投資建議。期貨交易具高度槓桿風險，請嚴守個人風控原則操作。
+      </div>
+    </div>
+
+    <!-- ═══ SWING PANEL ═══ -->
+    <div id="panel-swing" class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-sub">SWING TRADE MODE</div>
+          <div class="panel-title">波段單出手點 — 三線合一研判</div>
+        </div>
+        <span class="panel-tag">SWING POSITION</span>
+      </div>
+
+      <div class="sec-label">MA INPUT · 三條均線數值</div>
+      <div class="input-grid-3">
+        <div class="field"><label>MA5 今日</label><input id="sw_ma5t" type="number" placeholder="20450" value="20450"></div>
+        <div class="field"><label>MA10 今日</label><input id="sw_ma10t" type="number" placeholder="20380" value="20380"></div>
+        <div class="field"><label>MA20 今日</label><input id="sw_ma20t" type="number" placeholder="20300" value="20300"></div>
+      </div>
+      <div class="input-grid-3">
+        <div class="field"><label>MA5 昨日 (前值)</label><input id="sw_ma5p" type="number" placeholder="20400" value="20400"></div>
+        <div class="field"><label>MA10 昨日 (前值)</label><input id="sw_ma10p" type="number" placeholder="20360" value="20360"></div>
+        <div class="field"><label>MA20 昨日 (前值)</label><input id="sw_ma20p" type="number" placeholder="20290" value="20290"></div>
+      </div>
+
+      <div class="sec-label">CONVERGENCE THRESHOLD · 合一容差設定</div>
+      <div class="input-grid-2" style="margin-bottom:24px;">
+        <div class="field">
+          <label>三線合一容差 (%)</label>
+          <input id="sw_threshold" type="number" placeholder="1.5" value="1.5" step="0.1" min="0.1" max="5">
+        </div>
+        <div class="field">
+          <label>今日收盤價</label>
+          <input id="sw_close" type="number" placeholder="20500" value="20500">
+        </div>
+      </div>
+
+      <button class="btn-run" onclick="runSwing()"><span>▶ &nbsp; EXECUTE SWING SCAN &nbsp; — &nbsp; 執行波段訊號掃描</span></button>
+
+      <!-- MA VISUALIZER -->
+      <div id="swingViz" style="display:none; margin-bottom:24px;">
+        <div class="sec-label">MA CONVERGENCE CHART · 三線相對位置</div>
+        <div style="border:1px solid var(--border); background:var(--bg-card); padding:20px;">
+          <canvas id="maCanvas" width="800" height="160" style="width:100%; height:auto; display:block;"></canvas>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--border); border:1px solid var(--border); margin-top:1px;">
+          <div style="background:var(--bg-card); padding:14px 16px;">
+            <div style="font-size:9px; letter-spacing:0.2em; color:var(--text-dim); margin-bottom:6px;">MA5 · 五日均</div>
+            <div style="font-size:20px; font-weight:600; color:#4d9fff;" id="sw_disp_ma5">—</div>
+            <div style="font-size:10px; margin-top:4px;" id="sw_dir_ma5">—</div>
+          </div>
+          <div style="background:var(--bg-card); padding:14px 16px;">
+            <div style="font-size:9px; letter-spacing:0.2em; color:var(--text-dim); margin-bottom:6px;">MA10 · 十日均</div>
+            <div style="font-size:20px; font-weight:600; color:#f0a500;" id="sw_disp_ma10">—</div>
+            <div style="font-size:10px; margin-top:4px;" id="sw_dir_ma10">—</div>
+          </div>
+          <div style="background:var(--bg-card); padding:14px 16px;">
+            <div style="font-size:9px; letter-spacing:0.2em; color:var(--text-dim); margin-bottom:6px;">MA20 · 二十日均</div>
+            <div style="font-size:20px; font-weight:600; color:#cc55ff;" id="sw_disp_ma20">—</div>
+            <div style="font-size:10px; margin-top:4px;" id="sw_dir_ma20">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SWING RESULT -->
+      <div id="swingSummary" style="display:none;" class="summary-bar">
+        <div class="sum-cell"><div class="sum-num bull" id="sw_bull">0</div><div class="sum-lbl">多方訊號</div></div>
+        <div class="sum-cell"><div class="sum-num bear" id="sw_bear">0</div><div class="sum-lbl">空方訊號</div></div>
+        <div class="sum-cell"><div class="sum-num neutral" id="sw_neutral">0</div><div class="sum-lbl">未觸發</div></div>
+        <div class="verdict-cell sum-cell"><div class="verdict-text neutral" id="sw_verdict">—</div></div>
+      </div>
+
+      <div id="swingCards" style="display:none; margin-bottom:28px;">
+        <!-- S1 三線合一 card -->
+        <div style="border:1px solid var(--border); background:var(--bg-card); overflow:hidden;">
+          <div style="display:grid; grid-template-columns:2px 1fr; height:100%;">
+            <div id="sw_bar" style="background:var(--text-dim);"></div>
+            <div style="padding:20px 24px;">
+              <div style="font-size:9px; letter-spacing:0.2em; color:var(--text-dim); margin-bottom:6px;">SWING SIGNAL · S1</div>
+              <div style="font-size:15px; font-weight:500; color:var(--text-secondary); margin-bottom:12px;">三線合一（MA5 / MA10 / MA20）向上 / 向下</div>
+              <div id="sw_badge" class="sig-status neutral" style="margin-bottom:14px;">NEUTRAL —</div>
+              <div id="sw_detail" style="font-size:12px; color:var(--text-dim); line-height:1.8; font-weight:300; border-top:1px solid var(--border); padding-top:12px;"></div>
+              <!-- spread gauge -->
+              <div style="margin-top:14px;">
+                <div style="font-size:9px; letter-spacing:0.15em; color:var(--text-dim); margin-bottom:6px;">THREE-LINE SPREAD · 三線離散度</div>
+                <div style="height:4px; background:var(--bg-input); border:1px solid var(--border); position:relative; overflow:hidden;">
+                  <div id="sw_gauge" style="position:absolute; left:0; top:0; height:100%; background:var(--text-dim); width:0%; transition:width 0.6s ease;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-dim); margin-top:4px;">
+                  <span>CONVERGED 合一</span>
+                  <span id="sw_spread_val">—</span>
+                  <span>DIVERGED 發散</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONDITION REFERENCE TABLE -->
+      <div class="sec-label">CONDITION REFERENCE · 判斷條件說明</div>
+      <div style="border:1px solid var(--border); background:var(--bg-card); margin-bottom:24px; overflow:hidden;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border);">
+          <div style="background:var(--bg-input); padding:10px 16px; font-size:9px; letter-spacing:0.15em; color:var(--text-dim); font-weight:500;">條件</div>
+          <div style="background:var(--bg-input); padding:10px 16px; font-size:9px; letter-spacing:0.15em; color:var(--text-dim); font-weight:500;">研判標準</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border);">
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:12px; color:var(--text-secondary);">三線合一</div>
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:11px; color:var(--text-dim);">Max(MA5,MA10,MA20) − Min(MA5,MA10,MA20) ÷ 中間值 × 100 ≤ 設定容差%</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border);">
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:12px; color:var(--green);">向上出手（多）</div>
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:11px; color:var(--text-dim);">三線合一 且 MA5、MA10、MA20 均 今日 > 昨日（三線同步上揚）</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border);">
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:12px; color:var(--red);">向下出手（空）</div>
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:11px; color:var(--text-dim);">三線合一 且 MA5、MA10、MA20 均 今日 &lt; 昨日（三線同步下彎）</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border);">
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:12px; color:var(--text-secondary);">觀望</div>
+          <div style="background:var(--bg-card); padding:12px 16px; font-size:11px; color:var(--text-dim);">三線尚未合一（離散度 > 容差），或方向不一致（部分上揚部分下彎）</div>
+        </div>
+      </div>
+
+      <div style="font-size:10px; color:var(--text-dim); letter-spacing:0.08em; padding:12px 0; border-top:1px solid var(--border);">
+        ⚠ DISCLAIMER · 本系統僅供技術分析參考，不構成任何投資建議。期貨交易具高度槓桿風險，請嚴守個人風控原則操作。
+      </div>
+    </div>
+
+
+    <div id="panel-vision" class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-sub">AI VISION MODE — 圖形自動判讀</div>
+          <div class="panel-title">上傳圖表 · AI 全訊號掃描</div>
+        </div>
+        <span class="panel-tag">CLAUDE VISION</span>
+      </div>
+
+      <!-- Condition checklist -->
+      <div class="sec-label">SCAN SCOPE · 掃描範圍</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--border); border:1px solid var(--border); margin-bottom:20px;">
+        <div style="background:var(--bg-card); padding:10px 14px;">
+          <div style="font-size:9px; letter-spacing:0.18em; color:var(--amber); margin-bottom:8px; font-weight:500;">隔日沖 · 8大出手條件</div>
+          <div style="font-size:11px; color:var(--text-secondary); line-height:2;">
+            01 · 突破/跌破長期趨勢線<br>
+            02 · 島型反轉或跳空缺口<br>
+            03 · 突破/跌破 45° 角線<br>
+            04 · 底部大量換手強勢K棒<br>
+            05 · RSI 背離或雙底<br>
+            06 · RSI 臨界領先（快慢線差 ±22）<br>
+            07 · 價乖離領先（±5% / ±6%）<br>
+            08 · 布林通道出軌
+          </div>
+        </div>
+        <div style="background:var(--bg-card); padding:10px 14px;">
+          <div style="font-size:9px; letter-spacing:0.18em; color:var(--blue); margin-bottom:8px; font-weight:500;">波段單 · 1大出手條件</div>
+          <div style="font-size:11px; color:var(--text-secondary); line-height:2;">
+            S1 · 三線合一（MA5/10/20）向上或向下<br>
+          </div>
+          <div style="margin-top:16px; font-size:9px; letter-spacing:0.15em; color:var(--text-dim);">AI 將同時判斷是否符合隔日沖或<br>波段單的任一出手點，並給出<br>具體投資建議。</div>
+        </div>
+      </div>
+
+      <div class="sec-label">CHART UPLOAD</div>
+
+      <div id="uploadZone" class="upload-zone">
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(this.files[0])">
+        <div class="upload-icon">📊</div>
+        <div class="upload-title">DROP CHART IMAGE HERE</div>
+        <div class="upload-hint">拖放或點擊上傳 K 線圖 · 支援 JPG PNG WEBP GIF · AI 將自動掃描全部 9 個出手條件</div>
+      </div>
+
+      <div id="previewWrap" class="preview-wrap" style="display:none;">
+        <img id="previewImg" src="" alt="chart">
+        <div class="preview-remove" onclick="clearImage()">✕</div>
+      </div>
+
+      <div id="errorBox" class="error-box" style="display:none;"></div>
+
+      <button id="btnAnalyze" class="btn-analyze" onclick="analyzeImage()" disabled>
+        ▶ &nbsp; AI ANALYZE CHART &nbsp; — &nbsp; 執行 AI 圖形判讀 ↗
+      </button>
+
+      <div id="aiLoading" class="ai-loading" style="display:none;">
+        <div class="spinner"></div>
+        <span id="loadingText">AI 正在讀取圖表結構...</span>
+      </div>
+
+      <div id="aiEntryGrid" class="ai-entry-grid" style="display:none;">
+        <div class="entry-cell"><div class="entry-label">TRADE TYPE · 建議交易類型</div><div class="entry-val" id="entryType">—</div></div>
+        <div class="entry-cell"><div class="entry-label">ENTRY DIRECTION · 出手方向與時機</div><div class="entry-val" id="entryDir">—</div></div>
+        <div class="entry-cell"><div class="entry-label">STOP LOSS · 停損位置</div><div class="entry-val" id="entryStop">—</div></div>
+        <div class="entry-cell"><div class="entry-label">TARGET · 獲利目標</div><div class="entry-val" id="entryTarget">—</div></div>
+        <div class="entry-cell" style="grid-column: 1 / -1;"><div class="entry-label">INVESTMENT ADVICE · 投資建議</div><div class="entry-val" id="entryAdvice" style="line-height:1.8;">—</div></div>
+      </div>
+
+      <div id="aiResult" class="ai-result-block" style="display:none;">
+        <div class="ai-result-header"><div class="dot-green"></div>AI ANALYSIS SUMMARY · 綜合研判</div>
+        <div id="aiResultBody" class="ai-result-body"></div>
+      </div>
+
+      <div id="aiSignalGrid" class="signal-grid" style="display:none;"></div>
+
+      <div id="aiSummaryBar" class="summary-bar" style="display:none;">
+        <div class="sum-cell"><div class="sum-num bull" id="aiBullCount">0</div><div class="sum-lbl">LONG SIGNALS</div></div>
+        <div class="sum-cell"><div class="sum-num bear" id="aiBearCount">0</div><div class="sum-lbl">SHORT SIGNALS</div></div>
+        <div class="sum-cell"><div class="sum-num neutral" id="aiNeutralCount">0</div><div class="sum-lbl">NEUTRAL</div></div>
+        <div class="verdict-cell sum-cell"><div class="verdict-text neutral" id="aiVerdictBox">—</div></div>
+      </div>
+
+      <div style="font-size:10px; color:var(--text-dim); letter-spacing:0.08em; padding:12px 0; border-top:1px solid var(--border);">
+        ⚠ DISCLAIMER · 本系統僅供技術分析參考，不構成任何投資建議。期貨交易具高度槓桿風險，請嚴守個人風控原則操作。
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <span>FSS · FUTURES SIGNAL SCANNER · v3.1</span>
+  <span class="footer-warning">HIGH RISK WARNING · 期貨交易具高度風險，投資人須自負盈虧</span>
+  <span id="footerDate">—</span>
+</footer>
+
+<script>
+// Clock
+function tick() {
+  const now = new Date();
+  const t = now.toLocaleTimeString('zh-TW', { hour12: false });
+  document.getElementById('clock').textContent = t;
+  document.getElementById('footerDate').textContent = now.toLocaleDateString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', weekday:'short' });
+}
+tick(); setInterval(tick, 1000);
+
+// Panel switch
+function setPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item[onclick]').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+// ─── SWING SCAN ───
+function runSwing() {
+  const v = n => parseFloat(document.getElementById(n).value) || 0;
+  const ma5t  = v('sw_ma5t'),  ma10t  = v('sw_ma10t'),  ma20t  = v('sw_ma20t');
+  const ma5p  = v('sw_ma5p'),  ma10p  = v('sw_ma10p'),  ma20p  = v('sw_ma20p');
+  const thr   = v('sw_threshold') || 1.5;
+  const close = v('sw_close');
+
+  // Direction of each MA
+  const d5  = ma5t  > ma5p  ? 'up' : ma5t  < ma5p  ? 'dn' : 'flat';
+  const d10 = ma10t > ma10p ? 'up' : ma10t < ma10p ? 'dn' : 'flat';
+  const d20 = ma20t > ma20p ? 'up' : ma20t < ma20p ? 'dn' : 'flat';
+
+  // Spread
+  const vals = [ma5t, ma10t, ma20t].filter(x=>x>0);
+  const spread = vals.length === 3
+    ? ((Math.max(...vals) - Math.min(...vals)) / ((ma5t+ma10t+ma20t)/3) * 100)
+    : null;
+
+  const converged = spread !== null && spread <= thr;
+  const allUp     = [d5,d10,d20].every(d=>d==='up');
+  const allDn     = [d5,d10,d20].every(d=>d==='dn');
+
+  // Determine signal
+  let status = 'neutral', verdict = '', detail = '';
+  if (!converged && spread !== null) {
+    detail = `三線離散度 ${spread.toFixed(3)}% 超過容差 ${thr}%，三線尚未合一。\nMA5=${ma5t.toLocaleString()} / MA10=${ma10t.toLocaleString()} / MA20=${ma20t.toLocaleString()}，\n請等待均線進一步收斂後再評估出手時機。`;
+    verdict = `WAIT · 三線未合一 — 建議觀望`;
+  } else if (converged && allUp) {
+    status = 'bull';
+    detail = `三線離散度 ${spread.toFixed(3)}% ≤ ${thr}%，三線合一條件成立。\nMA5↑ MA10↑ MA20↑ 三線同步上揚，多頭排列確認。\n波段做多出手訊號觸發 — 可伺機佈局多單，建議追漲在突破前高或回測三線支撐時進場。`;
+    verdict = `LONG BIAS · 三線合一向上 — 波段做多訊號`;
+  } else if (converged && allDn) {
+    status = 'bear';
+    detail = `三線離散度 ${spread.toFixed(3)}% ≤ ${thr}%，三線合一條件成立。\nMA5↓ MA10↓ MA20↓ 三線同步下彎，空頭排列確認。\n波段做空出手訊號觸發 — 可伺機佈局空單，建議在反彈至三線壓力區附近放空。`;
+    verdict = `SHORT BIAS · 三線合一向下 — 波段做空訊號`;
+  } else if (converged) {
+    detail = `三線離散度 ${spread.toFixed(3)}% ≤ ${thr}%，三線已合一，但方向尚未一致。\nMA5=${d5==='up'?'↑':'↓'} MA10=${d10==='up'?'↑':'↓'} MA20=${d20==='up'?'↑':'↓'}，方向分歧。\n需等待三線方向同步後再出手。`;
+    verdict = `MIXED · 三線合一但方向分歧 — 繼續觀望`;
+  }
+
+  // Display MA values
+  const dirLabel = d => d==='up' ? '<span style="color:var(--green)">▲ 上揚</span>' : d==='dn' ? '<span style="color:var(--red)">▼ 下彎</span>' : '<span style="color:var(--text-dim)">— 持平</span>';
+  document.getElementById('sw_disp_ma5').textContent  = ma5t.toLocaleString();
+  document.getElementById('sw_disp_ma10').textContent = ma10t.toLocaleString();
+  document.getElementById('sw_disp_ma20').textContent = ma20t.toLocaleString();
+  document.getElementById('sw_dir_ma5').innerHTML  = dirLabel(d5);
+  document.getElementById('sw_dir_ma10').innerHTML = dirLabel(d10);
+  document.getElementById('sw_dir_ma20').innerHTML = dirLabel(d20);
+
+  // Gauge
+  const gaugeW = spread !== null ? Math.min(spread / (thr * 3) * 100, 100).toFixed(1) : 0;
+  const gaugeColor = spread !== null && spread <= thr
+    ? (allUp ? 'var(--green)' : allDn ? 'var(--red)' : 'var(--amber)')
+    : 'var(--text-dim)';
+  document.getElementById('sw_gauge').style.width = gaugeW + '%';
+  document.getElementById('sw_gauge').style.background = gaugeColor;
+  document.getElementById('sw_spread_val').textContent = spread !== null ? spread.toFixed(3) + '%' : '—';
+
+  // Signal card
+  const badge = document.getElementById('sw_badge');
+  badge.className = 'sig-status ' + status;
+  badge.textContent = status==='bull' ? 'LONG ▲ 多方觸發' : status==='bear' ? 'SHORT ▼ 空方觸發' : 'NEUTRAL — 未觸發';
+  document.getElementById('sw_detail').innerHTML = detail.replace(/\n/g,'<br>');
+  const bar = document.getElementById('sw_bar');
+  bar.style.background = status==='bull' ? 'var(--green)' : status==='bear' ? 'var(--red)' : 'var(--text-dim)';
+
+  // Summary
+  const bull = status==='bull'?1:0, bear = status==='bear'?1:0, neu = status==='neutral'?1:0;
+  document.getElementById('sw_bull').textContent = bull;
+  document.getElementById('sw_bear').textContent = bear;
+  document.getElementById('sw_neutral').textContent = neu;
+  const vb = document.getElementById('sw_verdict');
+  vb.className = 'verdict-text ' + status;
+  vb.textContent = verdict;
+
+  // Draw MA canvas
+  drawMACanvas(ma5t, ma10t, ma20t, ma5p, ma10p, ma20p, close, thr);
+
+  // Show
+  document.getElementById('swingViz').style.display = 'block';
+  document.getElementById('swingCards').style.display = 'block';
+  document.getElementById('swingSummary').style.display = 'grid';
+}
+
+function drawMACanvas(ma5t, ma10t, ma20t, ma5p, ma10p, ma20p, close, thr) {
+  const canvas = document.getElementById('maCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  const allVals = [ma5t,ma10t,ma20t,ma5p,ma10p,ma20p,close].filter(x=>x>0);
+  if (allVals.length < 6) return;
+  const minV = Math.min(...allVals) * 0.9995;
+  const maxV = Math.max(...allVals) * 1.0005;
+  const scaleY = v => H - ((v - minV) / (maxV - minV)) * (H - 24) - 12;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i=0;i<4;i++) {
+    const y = 12 + i * (H-24)/3;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  }
+
+  // Two time points: prev (x=80) and today (x=W-80)
+  const xP = 80, xT = W - 80;
+
+  // Price dots
+  if (close > 0) {
+    ctx.beginPath();
+    ctx.arc(xT, scaleY(close), 4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.fillText('CLOSE ' + close.toLocaleString(), xT + 8, scaleY(close) + 4);
+  }
+
+  // Draw MA lines
+  const lines = [
+    { prev: ma5p,  today: ma5t,  color: '#4d9fff', label: 'MA5' },
+    { prev: ma10p, today: ma10t, color: '#f0a500', label: 'MA10' },
+    { prev: ma20p, today: ma20t, color: '#cc55ff', label: 'MA20' },
+  ];
+
+  lines.forEach(l => {
+    const yP = scaleY(l.prev), yT = scaleY(l.today);
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(xP, yP);
+    ctx.lineTo(xT, yT);
+    ctx.strokeStyle = l.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Dots
+    [{ x:xP, y:yP, v:l.prev }, { x:xT, y:yT, v:l.today }].forEach(pt => {
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 5, 0, Math.PI*2);
+      ctx.fillStyle = l.color;
+      ctx.fill();
+    });
+    // Labels
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.fillStyle = l.color;
+    ctx.fillText(l.label + ' ' + l.today.toLocaleString(), xT + 8, yT + 4);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillText(l.prev.toLocaleString(), xP - 60, yP + 4);
+  });
+
+  // Axis labels
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.font = '10px IBM Plex Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('昨日 PREV', xP, H - 2);
+  ctx.fillText('今日 TODAY', xT, H - 2);
+  ctx.textAlign = 'left';
+
+  // Convergence band at today
+  const todayVals = [ma5t, ma10t, ma20t].filter(x=>x>0);
+  if (todayVals.length === 3) {
+    const yTop = scaleY(Math.max(...todayVals));
+    const yBot = scaleY(Math.min(...todayVals));
+    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillRect(xT - 20, yTop, 40, yBot - yTop);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(xT - 20, yTop, 40, yBot - yTop);
+  }
+}
+
+
+
+// ─── MANUAL SCAN ───
+function runScan() {
+  const v = n => parseFloat(document.getElementById(n).value) || 0;
+  const chk = id => document.getElementById(id).checked;
+  const sel = id => document.getElementById(id).value;
+  const close = v('todayClose'), high = v('todayHigh');
+  const ma5 = v('ma5'), bbU = v('bbUpper'), bbL = v('bbLower');
+  const rsi3 = v('rsi3'), rsi6 = v('rsi6'), rsi3p = v('rsi3Prev');
+  const rsiDiff = rsi3 - rsi6;
+  const pct = ma5 > 0 ? close / ma5 : 1;
+  const s1dir = sel('selTrend'), s2dir = sel('selIsland');
+
+  const signals = [
+    { num:'01', name:'長期趨勢線\n突破 / 跌破',
+      status: chk('chkTrend') ? s1dir : 'neutral',
+      detail: chk('chkTrend') ? (s1dir==='bull'?'有效突破長期下降趨勢線，多頭反攻訊號確立，留意追多時機':'有效跌破長期上升趨勢線，空方壓力浮現，留意放空時機') : '未觸發 — 請於日線圖上確認趨勢線位置與有效性' },
+    { num:'02', name:'島型反轉 /\n跳空缺口',
+      status: chk('chkIsland') ? s2dir : 'neutral',
+      detail: chk('chkIsland') ? (s2dir==='bull'?'出現向上跳空缺口或島型底部形態，多方力道強烈':'出現向下跳空缺口或島型頂部形態，空方力道強烈') : '未觸發 — 確認前後交易日是否出現跳空缺口' },
+    { num:'03', name:'45° 角線\n突破 / 跌破',
+      status: chk('chkLine45') ? s2dir : 'neutral',
+      detail: chk('chkLine45') ? (s2dir==='bull'?'突破 45° 角上升支撐線，趨勢明顯轉強':'跌破 45° 角壓力線，趨勢明顯轉弱') : '未觸發 — 請在圖表繪製 45° 角線後確認' },
+    { num:'04', name:'底部大量換手\n強勢 K 棒組合',
+      status: chk('chkVolume') ? 'bull' : 'neutral',
+      detail: chk('chkVolume') ? '底部量能明顯放大，K棒呈現強勢組合（長紅/錘子/早晨之星），換手成功多頭訊號' : '未觸發 — 確認底部量能是否明顯放大且 K 棒形態強勢' },
+  ];
+
+  const rsiBullBot = (rsi3 > 30 && rsi3p < 30);
+  const rsiHighDiv = (rsi3 < rsi3p) && (rsi3p - rsi3 >= 5);
+  let s5 = { num:'05', name:'RSI 背離 /\n雙底訊號', status:'neutral', detail:'' };
+  if (rsiBullBot) { s5.status='bull'; s5.detail=`RSI(3)=${rsi3.toFixed(1)} 從超賣區回升，底背離或雙底翻多訊號確立`; }
+  else if (rsiHighDiv) { s5.status='bear'; s5.detail=`RSI(3)=${rsi3.toFixed(1)} 出現頂背離，動能衰竭，留意空方介入`; }
+  else s5.detail = `RSI(3)=${rsi3.toFixed(1)} / RSI(6)=${rsi6.toFixed(1)}，目前無明顯背離或雙底訊號`;
+  signals.push(s5);
+
+  let s6 = { num:'06', name:'RSI 臨界\n領先指標', status:'neutral', detail:'' };
+  if (rsiDiff > 22) { s6.status='bull'; s6.detail=`RSI差值=${rsiDiff.toFixed(1)} > +22，快線大幅領先慢線，短多動能強烈觸發`; }
+  else if (rsiDiff < -22) { s6.status='bear'; s6.detail=`RSI差值=${rsiDiff.toFixed(1)} < -22，快線大幅落後慢線，短空動能強烈觸發`; }
+  else s6.detail = `RSI(3)−RSI(6)=${rsiDiff.toFixed(1)}，尚未達到 ±22 臨界觸發值`;
+  signals.push(s6);
+
+  let s7 = { num:'07', name:'價乖離\n領先指標', status:'neutral', detail:'' };
+  if (ma5 > 0) {
+    const p = ((pct-1)*100).toFixed(2);
+    if (pct >= 1.06) { s7.status='bear'; s7.detail=`乖離率=${p}%（≥+6%），指數嚴重過熱，強烈回測空訊號`; }
+    else if (pct >= 1.05) { s7.status='bear'; s7.detail=`乖離率=${p}%（≥+5%），指數偏熱，可留意短線空單機會`; }
+    else if (pct <= 0.94) { s7.status='bull'; s7.detail=`乖離率=${p}%（≤-6%），指數嚴重過冷，強烈反彈多訊號`; }
+    else if (pct <= 0.95) { s7.status='bull'; s7.detail=`乖離率=${p}%（≤-5%），指數偏冷，可留意短線多單機會`; }
+    else s7.detail = `乖離率=${p}%，位於 -5%~+5% 正常區間，未達領先觸發條件`;
+  } else s7.detail = '請輸入昨日五日均值以計算乖離率';
+  signals.push(s7);
+
+  let s8 = { num:'08', name:'布林通道\n出軌指標', status:'neutral', detail:'' };
+  if (bbU > 0 && bbL > 0) {
+    if (close > bbU) { s8.status='bear'; s8.detail=`今收=${close.toLocaleString()} > 上軌=${bbU.toLocaleString()}，過買區警示，逢高留意空方`; }
+    else if (close < bbL) { s8.status='bull'; s8.detail=`今收=${close.toLocaleString()} < 下軌=${bbL.toLocaleString()}，過賣區警示，逢低留意多方`; }
+    else { const pp = (((close-bbL)/(bbU-bbL))*100).toFixed(1); s8.detail=`今收=${close.toLocaleString()} 位於布林通道 ${pp}% 位置，尚未出軌觸發`; }
+  } else s8.detail = '請輸入布林上下軌數值';
+  signals.push(s8);
+
+  renderSignals(signals, 'signalGrid', 'bullCount', 'bearCount', 'neutralCount', 'verdictBox', 'summaryBar');
+  document.getElementById('summaryBar').style.display = 'grid';
+  document.getElementById('signalGrid').style.display = 'grid';
+}
+
+function renderSignals(signals, gridId, bullId, bearId, neutralId, verdictId, barId) {
+  const grid = document.getElementById(gridId);
+  grid.innerHTML = '';
+  let bull=0, bear=0, neutral=0;
+  signals.forEach(s => {
+    if (s.status==='bull') bull++; else if (s.status==='bear') bear++; else neutral++;
+    const card = document.createElement('div');
+    card.className = 'signal-card ' + s.status;
+    const statusLabel = s.status==='bull' ? 'LONG ▲' : s.status==='bear' ? 'SHORT ▼' : 'NEUTRAL —';
+    card.innerHTML = `
+      <div class="sig-num">SIGNAL · ${s.num}</div>
+      <div class="sig-name">${s.name.replace(/\n/g,'<br>')}</div>
+      <div class="sig-status ${s.status}">${statusLabel}</div>
+      <div class="sig-detail">${s.detail}</div>`;
+    grid.appendChild(card);
+  });
+  document.getElementById(bullId).textContent = bull;
+  document.getElementById(bearId).textContent = bear;
+  document.getElementById(neutralId).textContent = neutral;
+  const vb = document.getElementById(verdictId);
+  if (bull > bear && bull >= 3) {
+    vb.className = 'verdict-text bull';
+    vb.textContent = `LONG BIAS · 多方佔優 — 傾向隔日做多  (${bull} LONG / ${bear} SHORT)`;
+  } else if (bear > bull && bear >= 3) {
+    vb.className = 'verdict-text bear';
+    vb.textContent = `SHORT BIAS · 空方佔優 — 傾向隔日做空  (${bear} SHORT / ${bull} LONG)`;
+  } else {
+    vb.className = 'verdict-text neutral';
+    vb.textContent = `MIXED · 訊號分歧 — 建議觀望  (${bull} LONG / ${bear} SHORT)`;
+  }
+}
+
+// ─── VISION ───
+let imageBase64 = null, imageType = 'image/jpeg';
+
+function handleFile(file) {
+  if (!file) return;
+  imageType = file.type || 'image/jpeg';
+  const reader = new FileReader();
+  reader.onload = e => {
+    imageBase64 = e.target.result.split(',')[1];
+    document.getElementById('previewImg').src = e.target.result;
+    document.getElementById('previewWrap').style.display = 'block';
+    document.getElementById('uploadZone').style.display = 'none';
+    document.getElementById('btnAnalyze').disabled = false;
+    document.getElementById('btnAnalyze').classList.add('active');
+    document.getElementById('errorBox').style.display = 'none';
+    document.getElementById('aiResult').style.display = 'none';
+    document.getElementById('aiSignalGrid').style.display = 'none';
+    document.getElementById('aiSummaryBar').style.display = 'none';
+    document.getElementById('aiEntryGrid').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImage() {
+  imageBase64 = null;
+  document.getElementById('previewWrap').style.display = 'none';
+  document.getElementById('uploadZone').style.display = 'block';
+  document.getElementById('btnAnalyze').disabled = true;
+  document.getElementById('btnAnalyze').classList.remove('active');
+  document.getElementById('fileInput').value = '';
+  ['aiResult','aiSignalGrid','aiSummaryBar','aiEntryGrid'].forEach(id => document.getElementById(id).style.display='none');
+}
+
+const loadingMsgs = [
+  'AI 正在辨識 K 棒結構與型態...',
+  '掃描長期趨勢線與角度...',
+  '偵測 RSI 背離與臨界條件...',
+  '檢查跳空缺口與島型反轉...',
+  '評估布林通道出軌情況...',
+  '分析三線合一波段條件...',
+  '綜合 9 大訊號研判中...',
+  '生成投資建議報告...'
+];
+
+async function analyzeImage() {
+  if (!imageBase64) return;
+  document.getElementById('btnAnalyze').disabled = true;
+  document.getElementById('aiLoading').style.display = 'flex';
+  ['aiResult','aiSignalGrid','aiSummaryBar','aiEntryGrid','errorBox'].forEach(id => document.getElementById(id).style.display='none');
+
+  let mi = 0;
+  const t = setInterval(() => { mi = (mi+1)%loadingMsgs.length; document.getElementById('loadingText').textContent = loadingMsgs[mi]; }, 2000);
+
+  const sys = `你是一位頂尖台指期貨投資專家，擅長隔日沖與波段操作的技術分析。
+使用者上傳一張技術分析圖表（K線圖），請仔細分析圖中所有可見的技術特徵，針對以下所有出手條件逐一判斷是否符合，最後給出明確投資建議。
+
+【隔日沖出手條件 — 8項】
+01. 突破或跌破長期趨勢線
+02. 島型反轉或缺口（跳空缺口、島型頂底）
+03. 突破或跌破45度角線
+04. 底部出大量換手成功（K線出現強勢組合：長紅棒、錘子、早晨之星、吞噬等）
+05. RSI背離或雙底（RSI=3日快線，RSI=6日慢線；觀察兩線交叉或背離）
+06. RSI臨界領先指標（RSI(3)-RSI(6)>22 為多頭領先；<-22 為空頭領先）
+07. 價乖離領先指標（今日收盤 > 五日均線*1.05~1.06 = 過熱偏空；< 五日均線*0.94~0.95 = 過冷偏多）
+08. 布林通道出軌（今日收盤突破上軌 = 過買偏空；跌破下軌 = 過賣偏多）
+
+【波段單出手條件 — 1項】
+S1. 三線合一（MA5、MA10、MA20 三線靠攏且同步向上 = 波段做多；同步向下 = 波段做空）
+
+判斷規則：
+- 若圖表中指標不可見或無法確認，該項 status 設為 "neutral" 並說明原因
+- 隔日沖訊號觸發 ≥ 3個同向 → 隔日沖出手
+- 波段S1觸發 → 波段單出手
+- 兩者都觸發 → 雙重確認，更強力的進場訊號
+
+請以純 JSON 格式回傳（不含 markdown、不含任何額外文字）：
+{
+  "summary": "整體技術面綜合研判（4-5句繁體中文，具體描述圖中關鍵技術特徵）",
+  "direction": "bull|bear|neutral",
+  "trade_type": "隔日沖|波段單|隔日沖+波段單|觀望",
+  "signals": [
+    {"num":"01","name":"訊號名稱","category":"intraday|swing","status":"bull|bear|neutral","detail":"針對圖中具體觀察（繁體中文，1-2句）"}
+  ],
+  "entry": "具體進場時機說明（繁體中文）",
+  "stop": "具體停損位置與金額估算（繁體中文）",
+  "target": "獲利目標與預期報酬（繁體中文）",
+  "advice": "完整投資建議（5-7句繁體中文，包含：是否出手、交易方向、進場價位區間、停損點、目標位、資金控管建議、風險提示）"
+}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1500,
+        system: sys,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: imageType, data: imageBase64 } },
+          { type: 'text', text: '請分析此技術分析圖表，針對隔日沖8大條件和波段單S1條件逐一研判，指出符合哪些出手點，並給出完整投資建議，以 JSON 格式回傳。' }
+        ]}]
+      })
+    });
+
+    clearInterval(t);
+    document.getElementById('aiLoading').style.display = 'none';
+
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message||`HTTP ${resp.status}`); }
+
+    const data = await resp.json();
+    const raw = data.content.map(c=>c.text||'').join('').trim();
+    let parsed;
+    try { parsed = JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+    catch(e) {
+      document.getElementById('aiResultBody').textContent = raw;
+      document.getElementById('aiResult').style.display = 'block';
+      document.getElementById('btnAnalyze').disabled = false;
+      return;
+    }
+
+    // Entry grid
+    const typeEl = document.getElementById('entryType');
+    const tt = parsed.trade_type || '—';
+    typeEl.textContent = tt;
+    typeEl.style.color = tt.includes('多') || tt.includes('多') ? 'var(--green)'
+      : tt.includes('空') ? 'var(--red)'
+      : tt === '觀望' ? 'var(--text-secondary)' : 'var(--amber)';
+    document.getElementById('entryDir').textContent    = parsed.entry  || '—';
+    document.getElementById('entryStop').textContent   = parsed.stop   || '—';
+    document.getElementById('entryTarget').textContent = parsed.target || '—';
+    document.getElementById('entryAdvice').textContent = parsed.advice || '—';
+    document.getElementById('aiEntryGrid').style.display = 'grid';
+
+    // Summary
+    document.getElementById('aiResultBody').textContent = parsed.summary || '';
+    document.getElementById('aiResult').style.display = 'block';
+
+    // Signals — colour-code intraday vs swing
+    if (parsed.signals) {
+      const sigs = parsed.signals.map(s => ({
+        ...s,
+        name: s.name + (s.category === 'swing' ? '\n【波段】' : '\n【隔日沖】')
+      }));
+      renderSignals(sigs, 'aiSignalGrid', 'aiBullCount', 'aiBearCount', 'aiNeutralCount', 'aiVerdictBox', 'aiSummaryBar');
+      document.getElementById('aiSignalGrid').style.display = 'grid';
+      document.getElementById('aiSummaryBar').style.display = 'grid';
+    }
+
+  } catch(err) {
+    clearInterval(t);
+    document.getElementById('aiLoading').style.display = 'none';
+    document.getElementById('errorBox').textContent = `ANALYSIS ERROR · ${err.message}`;
+    document.getElementById('errorBox').style.display = 'block';
+  }
+  document.getElementById('btnAnalyze').disabled = false;
+  document.getElementById('btnAnalyze').classList.add('active');
+}
+
+// Drag & drop
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('dragover'); const f = e.dataTransfer.files[0]; if(f) handleFile(f); });
+</script>
+</body>
+</html>

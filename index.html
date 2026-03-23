@@ -478,7 +478,134 @@ body::before {
   margin-bottom: 16px;
 }
 
-/* ─── FOOTER ─── */
+/* ─── MARKET DATA STRIP ─── */
+.mkt-strip {
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px;
+}
+.mkt-strip-inner {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.mkt-strip-title {
+  display: flex;
+  align-items: center;
+  padding: 0 20px 0 0;
+  border-right: 1px solid var(--border);
+  margin-right: 0;
+  min-width: 140px;
+}
+.mkt-strip-title-text {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.mkt-cells {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.mkt-cells::-webkit-scrollbar { display: none; }
+.mkt-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px 18px;
+  border-right: 1px solid var(--border);
+  min-width: 120px;
+  gap: 3px;
+  transition: background 0.15s;
+}
+.mkt-cell:hover { background: rgba(255,255,255,0.02); }
+.mkt-cell-label {
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.mkt-cell-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--amber);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.mkt-cell-chg {
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.mkt-cell-chg.up { color: var(--green); }
+.mkt-cell-chg.dn { color: var(--red); }
+.mkt-cell-chg.flat { color: var(--text-dim); }
+.mkt-cell.yday { background: rgba(0,0,0,0.2); }
+.mkt-cell.yday .mkt-cell-val { color: var(--text-secondary); font-size: 13px; }
+.mkt-section-divider {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-right: 1px solid var(--border);
+}
+.mkt-section-label {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.mkt-refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  min-width: 130px;
+  flex-direction: column;
+  justify-content: center;
+}
+.mkt-refresh-btn:hover { color: var(--amber); background: var(--amber-glow); }
+.mkt-refresh-btn.loading { color: var(--amber); }
+.mkt-refresh-btn .refresh-icon { font-size: 14px; }
+.mkt-updated {
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+}
+.mkt-loading-bar {
+  height: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+.mkt-loading-fill {
+  height: 100%;
+  background: var(--amber);
+  width: 0%;
+  transition: width 0.3s;
+  animation: none;
+}
+.mkt-loading-fill.running {
+  animation: mktprogress 3s ease-in-out infinite;
+}
+@keyframes mktprogress {
+  0% { width: 0%; margin-left: 0%; }
+  50% { width: 60%; margin-left: 20%; }
+  100% { width: 0%; margin-left: 100%; }
+}
+
 .site-footer {
   border-top: 1px solid var(--border);
   padding: 16px 32px;
@@ -511,7 +638,72 @@ body::before {
   .ai-entry-grid { grid-template-columns: 1fr; }
 }
 
-/* Panel visibility */
+/* ─── K-LINE CHART PANEL ─── */
+.chart-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 0 16px; flex-wrap: wrap;
+}
+.chart-btn {
+  padding: 5px 12px; font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+  background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+  font-family: var(--mono); cursor: pointer; transition: all 0.15s;
+}
+.chart-btn:hover { border-color: var(--amber); color: var(--amber); }
+.chart-btn.active { border-color: var(--amber); color: var(--amber); background: var(--amber-glow); }
+.chart-symbol-select {
+  padding: 5px 10px; font-size: 12px; font-weight: 500;
+  background: var(--bg-input); border: 1px solid var(--border);
+  color: var(--text-primary); font-family: var(--mono); cursor: pointer;
+  letter-spacing: 0.06em;
+}
+.chart-symbol-select:focus { outline: none; border-color: var(--amber); }
+.chart-symbol-select option { background: var(--bg-card); }
+.chart-status {
+  font-size: 11px; color: var(--text-dim); letter-spacing: 0.06em;
+  margin-left: auto; display: flex; align-items: center; gap: 8px;
+}
+.chart-wrap {
+  position: relative; width: 100%; border: 1px solid var(--border);
+  background: var(--bg-card); overflow: hidden; cursor: crosshair;
+}
+canvas#klineCanvas { display: block; width: 100%; }
+.chart-legend {
+  position: absolute; top: 8px; left: 70px;
+  display: flex; gap: 12px; flex-wrap: wrap; pointer-events: none;
+}
+.chart-legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.04em;
+}
+.chart-legend-dot { width: 20px; height: 2px; border-radius: 1px; }
+.chart-tooltip {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(10,15,20,0.92); border: 1px solid var(--border-bright);
+  padding: 8px 12px; font-size: 11px; font-family: 'IBM Plex Mono', monospace;
+  color: var(--text-secondary); pointer-events: none; display: none; min-width: 180px;
+  line-height: 1.8;
+}
+.chart-tooltip .tt-date { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; letter-spacing: 0.08em; }
+.chart-tooltip .tt-o { color: var(--text-secondary); }
+.chart-tooltip .tt-h { color: var(--green); }
+.chart-tooltip .tt-l { color: var(--red); }
+.chart-tooltip .tt-c { color: var(--amber); font-weight: 600; }
+.chart-loading {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card); flex-direction: column; gap: 12px;
+  font-size: 12px; color: var(--text-secondary); letter-spacing: 0.1em;
+}
+.chart-indicator-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+  background: var(--border); border: 1px solid var(--border); margin-top: 1px; margin-bottom: 16px;
+}
+.chart-ind-cell {
+  background: var(--bg-card); padding: 8px 14px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.chart-ind-label { font-size: 9px; letter-spacing: 0.15em; color: var(--text-dim); }
+.chart-ind-val { font-size: 13px; font-weight: 600; }
+
 .panel { display: none; }
 .panel.active { display: block; }
 
@@ -566,6 +758,44 @@ body::before {
   </div>
 </header>
 
+<!-- MARKET DATA STRIP -->
+<div class="mkt-loading-bar"><div class="mkt-loading-fill" id="mktLoadFill"></div></div>
+<div class="mkt-strip">
+  <div class="mkt-strip-inner">
+    <div class="mkt-strip-title">
+      <div class="mkt-strip-title-text">MARKET<br>DATA</div>
+    </div>
+
+    <!-- YESTERDAY -->
+    <div class="mkt-section-divider"><div class="mkt-section-label">YESTERDAY</div></div>
+    <div class="mkt-cell yday"><div class="mkt-cell-label">TX 昨收</div><div class="mkt-cell-val" id="yd_tx">—</div><div class="mkt-cell-chg flat" id="yd_tx_chg">昨日收盤</div></div>
+    <div class="mkt-cell yday"><div class="mkt-cell-label">加權指數 昨收</div><div class="mkt-cell-val" id="yd_taiex">—</div><div class="mkt-cell-chg flat" id="yd_taiex_chg">—</div></div>
+    <div class="mkt-cell yday"><div class="mkt-cell-label">昨日量 (億)</div><div class="mkt-cell-val" id="yd_vol">—</div><div class="mkt-cell-chg flat">昨日成交量</div></div>
+    <div class="mkt-cell yday"><div class="mkt-cell-label">昨日高 / 低</div><div class="mkt-cell-val" id="yd_hl">—</div><div class="mkt-cell-chg flat" id="yd_range">振幅 —</div></div>
+    <div class="mkt-cell yday"><div class="mkt-cell-label">外資期貨淨部位</div><div class="mkt-cell-val" id="yd_fii">—</div><div class="mkt-cell-chg flat" id="yd_fii_chg">口</div></div>
+
+    <!-- TODAY -->
+    <div class="mkt-section-divider"><div class="mkt-section-label">TODAY</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">TX 現價</div><div class="mkt-cell-val" id="td_tx">—</div><div class="mkt-cell-chg flat" id="td_tx_chg">—</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">加權指數 現值</div><div class="mkt-cell-val" id="td_taiex">—</div><div class="mkt-cell-chg flat" id="td_taiex_chg">—</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">今日量 (億)</div><div class="mkt-cell-val" id="td_vol">—</div><div class="mkt-cell-chg flat">即時成交量</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">USD / TWD</div><div class="mkt-cell-val" id="td_usd">—</div><div class="mkt-cell-chg flat" id="td_usd_chg">—</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">VIX 恐慌指數</div><div class="mkt-cell-val" id="td_vix">—</div><div class="mkt-cell-chg flat" id="td_vix_chg">—</div></div>
+
+    <!-- OVERSEAS -->
+    <div class="mkt-section-divider"><div class="mkt-section-label">OVERSEAS</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">S&P 500</div><div class="mkt-cell-val" id="os_sp">—</div><div class="mkt-cell-chg flat" id="os_sp_chg">—</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">NASDAQ</div><div class="mkt-cell-val" id="os_nq">—</div><div class="mkt-cell-chg flat" id="os_nq_chg">—</div></div>
+    <div class="mkt-cell"><div class="mkt-cell-label">GOLD 黃金</div><div class="mkt-cell-val" id="os_gold">—</div><div class="mkt-cell-chg flat" id="os_gold_chg">—</div></div>
+
+    <button class="mkt-refresh-btn" id="mktRefreshBtn" onclick="fetchMarketData()">
+      <span class="refresh-icon">⟳</span>
+      <span>抓取大盤資訊</span>
+      <span class="mkt-updated" id="mktUpdated">尚未載入</span>
+    </button>
+  </div>
+</div>
+
 <div class="layout">
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -573,6 +803,9 @@ body::before {
       <div class="sidebar-heading">ANALYSIS MODE</div>
       <div class="nav-item active" onclick="setPanel('manual', this)">
         <div class="nav-dot"></div>隔日沖模式
+      </div>
+      <div class="nav-item" onclick="setPanel('chart', this)">
+        <div class="nav-dot"></div>K 線圖模式
       </div>
       <div class="nav-item" onclick="setPanel('swing', this)">
         <div class="nav-dot"></div>波段單模式
@@ -607,12 +840,88 @@ body::before {
       <div class="sidebar-heading">SYSTEM STATUS</div>
       <div class="status-row"><span class="status-key">ENGINE</span><span class="status-val ok">ONLINE</span></div>
       <div class="status-row"><span class="status-key">AI VISION</span><span class="status-val ok">READY</span></div>
-      <div class="status-row"><span class="status-key">VERSION</span><span class="status-val">v3.0</span></div>
+      <div class="status-row"><span class="status-key">VERSION</span><span class="status-val">v5.0</span></div>
     </div>
   </aside>
 
   <!-- MAIN CONTENT -->
   <main class="main">
+
+    <!-- ═══ CHART PANEL ═══ -->
+    <div id="panel-chart" class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-sub">K-LINE CHART MODE</div>
+          <div class="panel-title">台灣加權指數 K 線圖</div>
+        </div>
+        <span class="panel-tag">LIVE DATA</span>
+      </div>
+
+      <div class="chart-toolbar">
+        <select class="chart-symbol-select" id="chartSymbol" onchange="loadChartData()">
+          <option value="^TWII">加權指數 TAIEX</option>
+          <option value="FITX.TW">台指期 TX</option>
+          <option value="2330.TW">台積電 2330</option>
+          <option value="^IXIC">NASDAQ</option>
+          <option value="^GSPC">S&P 500</option>
+        </select>
+        <button class="chart-btn active" id="btnD" onclick="setInterval2('1d',this)">日線</button>
+        <button class="chart-btn" id="btnW" onclick="setInterval2('1wk',this)">週線</button>
+        <button class="chart-btn" id="btnM" onclick="setInterval2('1mo',this)">月線</button>
+        <button class="chart-btn" onclick="loadChartData()">⟳ 更新</button>
+        <span class="chart-status">
+          <span id="chartStatusText">—</span>
+        </span>
+      </div>
+
+      <!-- Indicator value row -->
+      <div class="chart-indicator-row" id="chartIndRow">
+        <div class="chart-ind-cell"><div class="chart-ind-label">MA5</div><div class="chart-ind-val" id="ind_ma5" style="color:#4d9fff">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">MA10</div><div class="chart-ind-val" id="ind_ma10" style="color:#f0a500">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">MA20</div><div class="chart-ind-val" id="ind_ma20" style="color:#00c97d">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">MA34</div><div class="chart-ind-val" id="ind_ma34" style="color:#cc55ff">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">BB UPPER</div><div class="chart-ind-val" id="ind_bbu" style="color:#8899aa">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">BB LOWER</div><div class="chart-ind-val" id="ind_bbl" style="color:#8899aa">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">RSI(3)</div><div class="chart-ind-val" id="ind_rsi3" style="color:#ff9944">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">RSI(6)</div><div class="chart-ind-val" id="ind_rsi6" style="color:#ff6688">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">K值</div><div class="chart-ind-val" id="ind_k" style="color:#44ddff">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">D值</div><div class="chart-ind-val" id="ind_d" style="color:#ff88dd">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">成交量</div><div class="chart-ind-val" id="ind_vol" style="color:#8899aa">—</div></div>
+        <div class="chart-ind-cell"><div class="chart-ind-label">最新收盤</div><div class="chart-ind-val" id="ind_close" style="color:#f0a500">—</div></div>
+      </div>
+
+      <div class="chart-wrap" id="chartWrap">
+        <canvas id="klineCanvas"></canvas>
+        <div class="chart-legend" id="chartLegend">
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#4d9fff"></div><span style="color:#4d9fff">MA5</span></div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#f0a500"></div><span style="color:#f0a500">MA10</span></div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#00c97d"></div><span style="color:#00c97d">MA20</span></div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:#cc55ff"></div><span style="color:#cc55ff">MA34</span></div>
+          <div class="chart-legend-item"><div class="chart-legend-dot" style="background:rgba(136,153,170,0.6)"></div><span style="color:#8899aa">BB</span></div>
+        </div>
+        <div class="chart-tooltip" id="chartTooltip">
+          <div class="tt-date" id="tt_date">—</div>
+          <div><span style="color:var(--text-dim)">O </span><span class="tt-o" id="tt_o">—</span>
+               <span style="color:var(--text-dim)"> H </span><span class="tt-h" id="tt_h">—</span></div>
+          <div><span style="color:var(--text-dim)">L </span><span class="tt-l" id="tt_l">—</span>
+               <span style="color:var(--text-dim)"> C </span><span class="tt-c" id="tt_c">—</span></div>
+          <div style="margin-top:4px; border-top:1px solid rgba(255,255,255,0.07); padding-top:4px;">
+            <span style="color:#ff9944">RSI3 </span><span id="tt_rsi3">—</span>
+            <span style="color:#ff6688"> RSI6 </span><span id="tt_rsi6">—</span>
+          </div>
+          <div><span style="color:#44ddff">K </span><span id="tt_k">—</span>
+               <span style="color:#ff88dd"> D </span><span id="tt_d">—</span></div>
+        </div>
+        <div class="chart-loading" id="chartLoading">
+          <div class="spinner"></div>
+          <span id="chartLoadingText">正在載入行情資料...</span>
+        </div>
+      </div>
+
+      <div style="font-size:10px; color:var(--text-dim); letter-spacing:0.08em; padding:10px 0; border-top:1px solid var(--border); margin-top:8px;">
+        資料來源：Yahoo Finance · 僅供技術分析參考 · 資料可能延遲 15-20 分鐘
+      </div>
+    </div>
 
     <!-- ═══ MANUAL PANEL ═══ -->
     <div id="panel-manual" class="panel active">
@@ -898,7 +1207,7 @@ body::before {
 
 <!-- FOOTER -->
 <footer class="site-footer">
-  <span>FSS · FUTURES SIGNAL SCANNER · v3.1</span>
+  <span>FSS · FUTURES SIGNAL SCANNER · v5.0</span>
   <span class="footer-warning">HIGH RISK WARNING · 期貨交易具高度風險，投資人須自負盈虧</span>
   <span id="footerDate">—</span>
 </footer>
@@ -1244,6 +1553,26 @@ async function analyzeImage() {
   let mi = 0;
   const t = setInterval(() => { mi = (mi+1)%loadingMsgs.length; document.getElementById('loadingText').textContent = loadingMsgs[mi]; }, 2000);
 
+  const mktCtx = window.marketContext;
+  const mktBlock = mktCtx ? `
+【今日大盤即時資料（已自動抓取）】
+台指期現價：${mktCtx.td_tx || '—'}　今日漲跌：${mktCtx.td_tx_chg || '—'}　${mktCtx.td_tx_pct || ''}
+加權指數：${mktCtx.td_taiex || '—'}　漲跌：${mktCtx.td_taiex_chg || '—'}
+今日成交量：${mktCtx.td_vol || '—'} 億元
+VIX：${mktCtx.td_vix || '—'}　USD/TWD：${mktCtx.td_usd || '—'}
+S&P500：${mktCtx.os_sp || '—'} (${mktCtx.os_sp_chg || '—'})　NASDAQ：${mktCtx.os_nq || '—'} (${mktCtx.os_nq_chg || '—'})
+黃金：${mktCtx.os_gold || '—'} (${mktCtx.os_gold_chg || '—'})
+
+【昨日大盤資料】
+台指期昨收：${mktCtx.yd_tx || '—'}　漲跌：${mktCtx.yd_tx_chg || '—'}
+加權指數昨收：${mktCtx.yd_taiex || '—'}　漲跌：${mktCtx.yd_taiex_chg || '—'}
+昨日成交量：${mktCtx.yd_vol || '—'} 億元
+昨日台指期高低：${mktCtx.yd_high || '—'} / ${mktCtx.yd_low || '—'}
+外資期貨淨部位：${mktCtx.yd_fii || '—'} 口
+市場摘要：${mktCtx.market_note || '—'}
+請結合以上大盤資料與圖表一起分析。
+` : '';
+
   const sys = `你是一位頂尖台指期貨投資專家，擅長隔日沖與波段操作的技術分析。
 使用者上傳一張技術分析圖表（K線圖），請仔細分析圖中所有可見的技術特徵，針對以下所有出手條件逐一判斷是否符合，最後給出明確投資建議。
 
@@ -1290,7 +1619,7 @@ S1. 三線合一（MA5、MA10、MA20 三線靠攏且同步向上 = 波段做多�
         system: sys,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: imageType, data: imageBase64 } },
-          { type: 'text', text: '請分析此技術分析圖表，針對隔日沖8大條件和波段單S1條件逐一研判，指出符合哪些出手點，並給出完整投資建議，以 JSON 格式回傳。' }
+          { type: 'text', text: `請分析此技術分析圖表，針對隔日沖8大條件和波段單S1條件逐一研判，指出符合哪些出手點，並給出完整投資建議，以 JSON 格式回傳。${mktBlock}` }
         ]}]
       })
     });
@@ -1349,7 +1678,613 @@ S1. 三線合一（MA5、MA10、MA20 三線靠攏且同步向上 = 波段做多�
   document.getElementById('btnAnalyze').classList.add('active');
 }
 
-// Drag & drop
+// ═══════════════════════════════════════════════
+// K-LINE CHART ENGINE
+// ═══════════════════════════════════════════════
+let chartData = [];
+let chartInterval = '1d';
+let chartOffset = 0; // scroll offset from right
+const VISIBLE = 110;
+
+// ── Indicator Calculations ──
+function calcSMA(data, period, key='close') {
+  return data.map((d,i) => {
+    if (i < period-1) return null;
+    const sum = data.slice(i-period+1, i+1).reduce((a,b) => a + b[key], 0);
+    return sum / period;
+  });
+}
+function calcBB(data, period=20, mult=2) {
+  const sma = calcSMA(data, period);
+  return data.map((d,i) => {
+    if (sma[i] === null) return {mid:null, upper:null, lower:null};
+    const slice = data.slice(i-period+1, i+1).map(x=>x.close);
+    const mean = sma[i];
+    const variance = slice.reduce((a,b) => a + (b-mean)**2, 0) / period;
+    const std = Math.sqrt(variance);
+    return { mid: mean, upper: mean + mult*std, lower: mean - mult*std };
+  });
+}
+function calcRSI(data, period) {
+  const closes = data.map(d=>d.close);
+  const rsi = new Array(closes.length).fill(null);
+  if (closes.length < period+1) return rsi;
+  let gains=0, losses=0;
+  for (let i=1; i<=period; i++) {
+    const diff = closes[i] - closes[i-1];
+    if (diff > 0) gains += diff; else losses -= diff;
+  }
+  let avgGain = gains/period, avgLoss = losses/period;
+  rsi[period] = avgLoss === 0 ? 100 : 100 - 100/(1 + avgGain/avgLoss);
+  for (let i=period+1; i<closes.length; i++) {
+    const diff = closes[i] - closes[i-1];
+    const g = diff > 0 ? diff : 0, l = diff < 0 ? -diff : 0;
+    avgGain = (avgGain*(period-1)+g)/period;
+    avgLoss = (avgLoss*(period-1)+l)/period;
+    rsi[i] = avgLoss === 0 ? 100 : 100 - 100/(1 + avgGain/avgLoss);
+  }
+  return rsi;
+}
+function calcKD(data, kPeriod=9, slowing=3) {
+  const K=[], D=[];
+  for (let i=0; i<data.length; i++) {
+    if (i < kPeriod-1) { K.push(null); D.push(null); continue; }
+    const slice = data.slice(i-kPeriod+1, i+1);
+    const low = Math.min(...slice.map(d=>d.low));
+    const high = Math.max(...slice.map(d=>d.high));
+    const rawK = high === low ? 50 : (data[i].close-low)/(high-low)*100;
+    const prevKs = K.slice(-slowing+1).concat([rawK]).filter(x=>x!==null);
+    K.push(prevKs.reduce((a,b)=>a+b,0)/prevKs.length);
+    const prevDs = D.slice(-slowing+1).concat([K[K.length-1]]).filter(x=>x!==null);
+    D.push(prevDs.reduce((a,b)=>a+b,0)/prevDs.length);
+  }
+  return {K, D};
+}
+
+// ── Data Fetch ──
+async function loadChartData() {
+  const sym = document.getElementById('chartSymbol').value;
+  const loading = document.getElementById('chartLoading');
+  loading.style.display = 'flex';
+  document.getElementById('chartLoadingText').textContent = '正在載入行情資料...';
+  document.getElementById('chartStatusText').textContent = '載入中...';
+
+  const range = chartInterval === '1mo' ? '5y' : chartInterval === '1wk' ? '2y' : '9mo';
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${chartInterval}&range=${range}`;
+
+  let raw = null;
+  // Try direct fetch (CORS may allow)
+  try {
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (r.ok) raw = await r.json();
+  } catch(e) {}
+
+  // Try alternate Yahoo endpoint
+  if (!raw) {
+    try {
+      const url2 = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${chartInterval}&range=${range}`;
+      const r = await fetch(url2);
+      if (r.ok) raw = await r.json();
+    } catch(e) {}
+  }
+
+  if (raw && raw.chart && raw.chart.result && raw.chart.result[0]) {
+    const result = raw.chart.result[0];
+    const timestamps = result.timestamp;
+    const q = result.indicators.quote[0];
+    chartData = timestamps.map((t,i) => ({
+      time: new Date(t*1000),
+      open:  q.open[i]  || 0,
+      high:  q.high[i]  || 0,
+      low:   q.low[i]   || 0,
+      close: q.close[i] || 0,
+      volume: q.volume ? (q.volume[i]||0) : 0
+    })).filter(d => d.close > 0);
+    document.getElementById('chartStatusText').textContent = `${sym} · ${chartData.length} 根 · ${chartData[chartData.length-1]?.time.toLocaleDateString('zh-TW')}`;
+    chartOffset = 0;
+    drawChart();
+  } else {
+    // Fallback: generate synthetic data from market context
+    generateSyntheticData();
+    document.getElementById('chartStatusText').textContent = `⚠ CORS 限制 · 使用模擬示意資料`;
+  }
+  loading.style.display = 'none';
+}
+
+function generateSyntheticData() {
+  const ctx = window.marketContext;
+  let basePrice = ctx && ctx.yd_taiex ? parseFloat(ctx.yd_taiex.replace(/,/g,'')) : 20000;
+  if (!basePrice || isNaN(basePrice)) basePrice = 20000;
+  const days = 200;
+  let price = basePrice * 0.85;
+  const seed = (n) => { let x=Math.sin(n*9301+49297)*233280; return x-Math.floor(x); };
+  chartData = [];
+  let d = new Date(); d.setDate(d.getDate() - days);
+  for (let i=0; i<days; i++) {
+    // skip weekends
+    while (d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1);
+    const vol = (seed(i)-0.5)*0.025;
+    const trend = i/days * 0.18;
+    price = price * (1 + vol + trend/days);
+    const range = price * (0.005 + seed(i+100)*0.012);
+    const open = price * (1+(seed(i+200)-0.5)*0.008);
+    const close = price;
+    const high = Math.max(open,close) + range*seed(i+300);
+    const low = Math.min(open,close) - range*seed(i+400);
+    chartData.push({ time: new Date(d), open, high, low, close, volume: Math.floor(100000+seed(i+500)*800000) });
+    d = new Date(d); d.setDate(d.getDate()+1);
+  }
+  chartOffset = 0;
+  drawChart();
+}
+
+// ── Drawing Engine ──
+function drawChart() {
+  const wrap = document.getElementById('chartWrap');
+  const canvas = document.getElementById('klineCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const W = wrap.clientWidth;
+  // Golden ratio heights
+  const GR = 1.618;
+  const totalH = Math.round(W * 0.72); // aspect ratio
+  canvas.style.height = totalH + 'px';
+  canvas.width  = W * dpr;
+  canvas.height = totalH * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0,0,W,totalH);
+
+  // Layout constants
+  const ML = 12, MR = 72, MT = 12, MB = 4;
+  // Golden ratio section heights
+  const GAP = 3;
+  const subH = totalH * 0.382;
+  const mainH = totalH - subH - MT - MB;
+  const volH  = Math.round(subH * 0.33);
+  const kdH   = Math.round(subH * 0.335);
+  const rsiH  = Math.round(subH * 0.335);
+  const mainY = MT;
+  const volY  = mainY + mainH + GAP;
+  const kdY   = volY + volH + GAP;
+  const rsiY  = kdY + kdH + GAP;
+  const cW    = W - ML - MR;
+
+  // Visible data slice
+  const total = chartData.length;
+  const end   = Math.max(VISIBLE, total - chartOffset);
+  const start = Math.max(0, end - VISIBLE);
+  const visible = chartData.slice(start, end);
+  if (!visible.length) return;
+
+  // Precompute all indicators on full data
+  const ma5  = calcSMA(chartData, 5);
+  const ma10 = calcSMA(chartData, 10);
+  const ma20 = calcSMA(chartData, 20);
+  const ma34 = calcSMA(chartData, 34);
+  const bb   = calcBB(chartData, 20);
+  const rsi3 = calcRSI(chartData, 3);
+  const rsi6 = calcRSI(chartData, 6);
+  const {K, D} = calcKD(chartData);
+
+  // Slice to visible range
+  const vMa5  = ma5.slice(start, end);
+  const vMa10 = ma10.slice(start, end);
+  const vMa20 = ma20.slice(start, end);
+  const vMa34 = ma34.slice(start, end);
+  const vBB   = bb.slice(start, end);
+  const vRsi3 = rsi3.slice(start, end);
+  const vRsi6 = rsi6.slice(start, end);
+  const vK    = K.slice(start, end);
+  const vD    = D.slice(start, end);
+
+  const n = visible.length;
+  const candleW = cW / n;
+  const bodyW = Math.max(1, candleW * 0.6);
+
+  // Helper: map x index to pixel
+  const xOf = i => ML + (i + 0.5) * candleW;
+  // Helper: map value to y within a section
+  const yOf = (v, min, max, sY, sH) => sY + sH - ((v-min)/(max-min||1)) * sH;
+
+  // ─ Background ─
+  ctx.fillStyle = '#111820';
+  ctx.fillRect(0,0,W,totalH);
+
+  // Section backgrounds
+  [[mainY,mainH],[volY,volH],[kdY,kdH],[rsiY,rsiH]].forEach(([y,h]) => {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillRect(ML, y, cW, h);
+  });
+
+  // ─ Grid lines ─
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let g=0;g<5;g++) {
+    const y = mainY + g*(mainH/4);
+    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(ML+cW,y); ctx.stroke();
+  }
+  // Vertical grid every ~20 candles
+  for (let i=0;i<n;i+=20) {
+    const x = xOf(i);
+    ctx.beginPath(); ctx.moveTo(x,mainY); ctx.lineTo(x,rsiY+rsiH); ctx.stroke();
+  }
+
+  // ─ Price scale ─
+  const priceMin = Math.min(...visible.map(d=>d.low));
+  const priceMax = Math.max(...visible.map(d=>d.high));
+  const bbLows   = vBB.map(b=>b.lower).filter(v=>v!==null);
+  const bbHighs  = vBB.map(b=>b.upper).filter(v=>v!==null);
+  const pMin = Math.min(priceMin, bbLows.length ? Math.min(...bbLows) : priceMin) * 0.9985;
+  const pMax = Math.max(priceMax, bbHighs.length ? Math.max(...bbHighs) : priceMax) * 1.0015;
+
+  // ─ Draw Bollinger Band fill ─
+  ctx.beginPath();
+  let first = true;
+  for (let i=0;i<n;i++) {
+    if (!vBB[i].upper) continue;
+    const x=xOf(i), y=yOf(vBB[i].upper,pMin,pMax,mainY,mainH);
+    if(first){ctx.moveTo(x,y);first=false;}else ctx.lineTo(x,y);
+  }
+  for (let i=n-1;i>=0;i--) {
+    if (!vBB[i].lower) continue;
+    ctx.lineTo(xOf(i), yOf(vBB[i].lower,pMin,pMax,mainY,mainH));
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(136,153,170,0.06)';
+  ctx.fill();
+
+  // BB lines
+  const drawLine = (vals, section, minV, maxV, color, lineW=1.2) => {
+    ctx.strokeStyle = color; ctx.lineWidth = lineW;
+    ctx.beginPath(); let started=false;
+    for (let i=0;i<n;i++) {
+      if (vals[i]===null||vals[i]===undefined) { started=false; continue; }
+      const x=xOf(i), y=yOf(vals[i],minV,maxV,...section);
+      if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  };
+
+  drawLine(vBB.map(b=>b.upper), [mainY,mainH], pMin, pMax, 'rgba(136,153,170,0.5)');
+  drawLine(vBB.map(b=>b.lower), [mainY,mainH], pMin, pMax, 'rgba(136,153,170,0.5)');
+  drawLine(vBB.map(b=>b.mid),   [mainY,mainH], pMin, pMax, 'rgba(136,153,170,0.3)');
+
+  // MA lines
+  drawLine(vMa5,  [mainY,mainH], pMin, pMax, '#4d9fff', 1.2);
+  drawLine(vMa10, [mainY,mainH], pMin, pMax, '#f0a500', 1.2);
+  drawLine(vMa20, [mainY,mainH], pMin, pMax, '#00c97d', 1.4);
+  drawLine(vMa34, [mainY,mainH], pMin, pMax, '#cc55ff', 1.4);
+
+  // ─ Candlesticks ─
+  for (let i=0;i<n;i++) {
+    const d = visible[i];
+    const isUp = d.close >= d.open;
+    const col = isUp ? '#00c97d' : '#ff4757';
+    const colFill = isUp ? 'rgba(0,201,125,0.15)' : 'rgba(255,71,87,0.15)';
+    const x = xOf(i);
+    const yHigh = yOf(d.high, pMin, pMax, mainY, mainH);
+    const yLow  = yOf(d.low,  pMin, pMax, mainY, mainH);
+    const yOpen = yOf(d.open, pMin, pMax, mainY, mainH);
+    const yClose= yOf(d.close,pMin, pMax, mainY, mainH);
+    // Wick
+    ctx.strokeStyle = col; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yHigh); ctx.lineTo(x, yLow); ctx.stroke();
+    // Body
+    const bodyTop = Math.min(yOpen,yClose);
+    const bodyBot = Math.max(yOpen,yClose);
+    const bH = Math.max(1.5, bodyBot - bodyTop);
+    const bX = x - bodyW/2;
+    ctx.fillStyle = isUp ? 'rgba(0,201,125,0.85)' : 'rgba(255,71,87,0.85)';
+    ctx.fillRect(bX, bodyTop, bodyW, bH);
+    ctx.strokeStyle = col;
+    ctx.strokeRect(bX, bodyTop, bodyW, bH);
+  }
+
+  // ─ Y-axis price labels ─
+  ctx.fillStyle = 'rgba(68,85,102,0.9)';
+  ctx.font = '10px IBM Plex Mono, monospace';
+  ctx.textAlign = 'left';
+  const priceSteps = 6;
+  for (let s=0;s<=priceSteps;s++) {
+    const v = pMin + (pMax-pMin)*s/priceSteps;
+    const y = yOf(v, pMin, pMax, mainY, mainH);
+    ctx.fillText(Math.round(v).toLocaleString(), ML+cW+4, y+3);
+  }
+
+  // ─ X-axis date labels ─
+  ctx.textAlign = 'center';
+  for (let i=0;i<n;i+=Math.ceil(n/8)) {
+    const d = visible[i];
+    if (!d) continue;
+    ctx.fillText(
+      `${d.time.getMonth()+1}/${d.time.getDate()}`,
+      xOf(i), rsiY+rsiH+2
+    );
+  }
+
+  // ─ Volume ─
+  const maxVol = Math.max(...visible.map(d=>d.volume||0));
+  for (let i=0;i<n;i++) {
+    const d = visible[i];
+    if (!d.volume) continue;
+    const isUp = d.close >= d.open;
+    const x = xOf(i);
+    const barH = (d.volume/maxVol) * volH * 0.9;
+    ctx.fillStyle = isUp ? 'rgba(0,201,125,0.5)' : 'rgba(255,71,87,0.5)';
+    ctx.fillRect(x-bodyW/2, volY+volH-barH, bodyW, barH);
+  }
+  ctx.fillStyle = 'rgba(68,85,102,0.6)';
+  ctx.font = '9px IBM Plex Mono, monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('VOL', ML+2, volY+11);
+
+  // ─ KD Stochastic ─
+  const kdVals = [...vK,...vD].filter(v=>v!==null);
+  const kdMin = 0, kdMax = 100;
+  drawLine(vK, [kdY,kdH], kdMin, kdMax, '#44ddff', 1.2);
+  drawLine(vD, [kdY,kdH], kdMin, kdMax, '#ff88dd', 1.2);
+  // Overbought/oversold lines
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  [20,50,80].forEach(v => {
+    const y=yOf(v,kdMin,kdMax,kdY,kdH);
+    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(ML+cW,y); ctx.stroke();
+    ctx.fillStyle='rgba(68,85,102,0.7)'; ctx.textAlign='left';
+    ctx.fillText(v, ML+cW+4, y+3);
+  });
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(68,85,102,0.6)'; ctx.fillText('KD', ML+2, kdY+11);
+
+  // ─ RSI ─
+  const rsiMin = 0, rsiMax = 100;
+  drawLine(vRsi3, [rsiY,rsiH], rsiMin, rsiMax, '#ff9944', 1.4);
+  drawLine(vRsi6, [rsiY,rsiH], rsiMin, rsiMax, '#ff6688', 1.4);
+  ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  [30,50,70].forEach(v => {
+    const y=yOf(v,rsiMin,rsiMax,rsiY,rsiH);
+    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(ML+cW,y); ctx.stroke();
+    ctx.fillStyle='rgba(68,85,102,0.7)'; ctx.textAlign='left';
+    ctx.fillText(v, ML+cW+4, y+3);
+  });
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(68,85,102,0.6)'; ctx.fillText('RSI', ML+2, rsiY+11);
+  // RSI legend
+  ctx.fillStyle='#ff9944'; ctx.fillText('3', ML+26, rsiY+11);
+  ctx.fillStyle='#ff6688'; ctx.fillText('6', ML+36, rsiY+11);
+
+  // ─ Section separators ─
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1; ctx.setLineDash([]);
+  [volY,kdY,rsiY].forEach(y => {
+    ctx.beginPath(); ctx.moveTo(ML,y); ctx.lineTo(ML+cW,y); ctx.stroke();
+  });
+
+  // ─ Update indicator bar with latest values ─
+  const last = chartData.length - 1 - chartOffset;
+  const fmt = v => v===null ? '—' : Number(v).toFixed(2);
+  document.getElementById('ind_ma5').textContent   = fmt(ma5[last]);
+  document.getElementById('ind_ma10').textContent  = fmt(ma10[last]);
+  document.getElementById('ind_ma20').textContent  = fmt(ma20[last]);
+  document.getElementById('ind_ma34').textContent  = fmt(ma34[last]);
+  document.getElementById('ind_bbu').textContent   = fmt(bb[last]?.upper);
+  document.getElementById('ind_bbl').textContent   = fmt(bb[last]?.lower);
+  document.getElementById('ind_rsi3').textContent  = fmt(rsi3[last]);
+  document.getElementById('ind_rsi6').textContent  = fmt(rsi6[last]);
+  document.getElementById('ind_k').textContent     = fmt(K[last]);
+  document.getElementById('ind_d').textContent     = fmt(D[last]);
+  document.getElementById('ind_close').textContent = chartData[last]?.close.toFixed(2) || '—';
+  document.getElementById('ind_vol').textContent   = chartData[last]?.volume ? (chartData[last].volume/1e6).toFixed(1)+'M' : '—';
+
+  // Store layout info for crosshair
+  window._chartLayout = { W, ML, MR, MT, mainY, mainH, volY, volH, kdY, kdH, rsiY, rsiH,
+    pMin, pMax, cW, n, candleW, start, end, visible, ma5,ma10,ma20,ma34,bb,rsi3,rsi6,K,D };
+}
+
+// ── Crosshair & Tooltip ──
+document.getElementById('chartWrap').addEventListener('mousemove', function(e) {
+  const L = window._chartLayout;
+  if (!L) return;
+  const rect = this.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const i = Math.floor((mx - L.ML) / L.candleW);
+  if (i < 0 || i >= L.n) return;
+  const d = L.visible[i];
+  if (!d) return;
+  const gi = L.start + i; // global index
+
+  const fmt = v => v===null||v===undefined ? '—' : Number(v).toFixed(2);
+  document.getElementById('tt_date').textContent = d.time.toLocaleDateString('zh-TW', {year:'numeric',month:'2-digit',day:'2-digit',weekday:'short'});
+  document.getElementById('tt_o').textContent = d.open.toFixed(2);
+  document.getElementById('tt_h').textContent = d.high.toFixed(2);
+  document.getElementById('tt_l').textContent = d.low.toFixed(2);
+  document.getElementById('tt_c').textContent = d.close.toFixed(2);
+  document.getElementById('tt_rsi3').textContent = fmt(window._chartLayout.rsi3[gi]);
+  document.getElementById('tt_rsi6').textContent = fmt(window._chartLayout.rsi6[gi]);
+  document.getElementById('tt_k').textContent = fmt(window._chartLayout.K[gi]);
+  document.getElementById('tt_d').textContent = fmt(window._chartLayout.D[gi]);
+  document.getElementById('chartTooltip').style.display = 'block';
+});
+document.getElementById('chartWrap').addEventListener('mouseleave', function() {
+  document.getElementById('chartTooltip').style.display = 'none';
+});
+
+// ── Scroll to pan ──
+document.getElementById('chartWrap').addEventListener('wheel', function(e) {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -3 : 3;
+  chartOffset = Math.max(0, Math.min(chartData.length - VISIBLE, chartOffset + delta));
+  drawChart();
+}, { passive: false });
+
+// ── Interval selector ──
+function setInterval2(iv, el) {
+  chartInterval = iv;
+  document.querySelectorAll('#btnD,#btnW,#btnM').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  loadChartData();
+}
+
+// ── Responsive redraw ──
+window.addEventListener('resize', () => { if (chartData.length) drawChart(); });
+
+// Auto-load chart when panel opens
+const _origSetPanel = setPanel;
+window.setPanel = function(id, el) {
+  _origSetPanel(id, el);
+  if (id === 'chart' && !chartData.length) loadChartData();
+};
+
+
+async function fetchMarketData() {
+  const btn = document.getElementById('mktRefreshBtn');
+  const fill = document.getElementById('mktLoadFill');
+  btn.classList.add('loading');
+  btn.querySelector('span:last-child').textContent = '資料載入中...';
+  fill.classList.add('running');
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('zh-TW', { year:'numeric', month:'2-digit', day:'2-digit', weekday:'short' });
+
+  const sys = `你是一個金融資料助手，請用繁體中文和數字提供台灣期貨市場資料。
+只回傳純 JSON，不含 markdown、說明文字或任何非 JSON 內容。
+
+請搜尋並填入以下欄位（今天日期：${dateStr}）：
+{
+  "yd_tx": "台指期昨日收盤點數（數字字串）",
+  "yd_tx_chg": "昨日漲跌點數（如 +120 或 -80）",
+  "yd_taiex": "加權指數昨收（數字字串）",
+  "yd_taiex_chg": "昨日漲跌幅（如 +0.6%）",
+  "yd_vol": "昨日台股成交量（億元，只要數字）",
+  "yd_high": "台指期昨日最高點",
+  "yd_low": "台指期昨日最低點",
+  "yd_fii": "外資期貨未平倉淨口數（如 +5000 或 -3000）",
+  "td_tx": "台指期目前最新點數",
+  "td_tx_chg": "今日漲跌（如 +150 或 -60）",
+  "td_tx_pct": "今日漲跌%（如 +0.7%）",
+  "td_taiex": "加權指數目前點數",
+  "td_taiex_chg": "今日漲跌幅",
+  "td_vol": "今日目前成交量（億元）",
+  "td_usd": "美元兌新台幣匯率（如 32.15）",
+  "td_usd_chg": "匯率變動",
+  "td_vix": "VIX 恐慌指數數值",
+  "td_vix_chg": "VIX 變動",
+  "os_sp": "S&P 500 最新點數（含逗號）",
+  "os_sp_chg": "S&P 500 漲跌%",
+  "os_nq": "NASDAQ 最新點數",
+  "os_nq_chg": "NASDAQ 漲跌%",
+  "os_gold": "黃金現貨價格 USD/oz",
+  "os_gold_chg": "黃金漲跌%",
+  "market_note": "一句話市場摘要（繁體中文，30字以內）"
+}
+若某資料無法取得，填入 "N/A"。嚴格只回傳 JSON。`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 800,
+        system: sys,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: `請立即搜尋並提供今天（${dateStr}）台灣期貨市場最新資料，包含台指期現價、昨日收盤、加權指數、外資期貨部位、VIX、美元匯率、美股指數、黃金，回傳 JSON。` }]
+      })
+    });
+
+    fill.classList.remove('running');
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    const raw = data.content.filter(c=>c.type==='text').map(c=>c.text).join('').trim();
+    let d;
+    try { d = JSON.parse(raw.replace(/```json|```/g,'').trim()); }
+    catch(e) { throw new Error('JSON 解析失敗'); }
+
+    // Helper: colour change string
+    const setChg = (id, val) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = val || '—';
+      const v = parseFloat((val||'').replace(/[^0-9.\-+]/g,''));
+      el.className = 'mkt-cell-chg ' + (v > 0 ? 'up' : v < 0 ? 'dn' : 'flat');
+    };
+    const setText = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val||'—'; };
+
+    // Yesterday
+    setText('yd_tx', d.yd_tx);
+    setChg('yd_tx_chg', d.yd_tx_chg);
+    setText('yd_taiex', d.yd_taiex);
+    setChg('yd_taiex_chg', d.yd_taiex_chg);
+    setText('yd_vol', d.yd_vol ? d.yd_vol + ' 億' : '—');
+    if (d.yd_high && d.yd_low) {
+      setText('yd_hl', d.yd_high + ' / ' + d.yd_low);
+      const range = parseFloat(d.yd_high) - parseFloat(d.yd_low);
+      setText('yd_range', isNaN(range) ? '振幅 —' : '振幅 ' + range.toFixed(0) + ' 點');
+    }
+    setText('yd_fii', d.yd_fii || '—');
+    setChg('yd_fii_chg', d.yd_fii && d.yd_fii !== 'N/A' ? d.yd_fii + ' 口' : '—');
+
+    // Today
+    setText('td_tx', d.td_tx);
+    const txChgStr = (d.td_tx_chg || '') + (d.td_tx_pct ? '  ' + d.td_tx_pct : '');
+    setChg('td_tx_chg', txChgStr || d.td_tx_chg);
+    setText('td_taiex', d.td_taiex);
+    setChg('td_taiex_chg', d.td_taiex_chg);
+    setText('td_vol', d.td_vol ? d.td_vol + ' 億' : '—');
+    setText('td_usd', d.td_usd);
+    setChg('td_usd_chg', d.td_usd_chg);
+    setText('td_vix', d.td_vix);
+    setChg('td_vix_chg', d.td_vix_chg);
+
+    // Overseas
+    setText('os_sp', d.os_sp);
+    setChg('os_sp_chg', d.os_sp_chg);
+    setText('os_nq', d.os_nq);
+    setChg('os_nq_chg', d.os_nq_chg);
+    setText('os_gold', d.os_gold ? 'USD ' + d.os_gold : '—');
+    setChg('os_gold_chg', d.os_gold_chg);
+
+    // Update ticker bar with real data
+    if (d.td_tx && d.td_tx !== 'N/A') {
+      document.getElementById('txPrice').textContent = d.td_tx;
+      const txc = document.getElementById('txChg');
+      txc.textContent = d.td_tx_chg || '—';
+      const cv = parseFloat((d.td_tx_chg||'').replace(/[^0-9.\-+]/g,''));
+      txc.className = 'ticker-chg ' + (cv > 0 ? 'up' : cv < 0 ? 'dn' : '');
+    }
+
+    // Store market context for AI use
+    window.marketContext = d;
+
+    // Update button
+    const updTime = now.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+    document.getElementById('mktUpdated').textContent = '更新 ' + updTime;
+    btn.classList.remove('loading');
+    btn.querySelector('.refresh-icon').textContent = '✓';
+    setTimeout(() => { btn.querySelector('.refresh-icon').textContent = '⟳'; }, 2000);
+
+    // Show market note in a subtle banner if provided
+    if (d.market_note && d.market_note !== 'N/A') {
+      let noteEl = document.getElementById('mktNote');
+      if (!noteEl) {
+        noteEl = document.createElement('div');
+        noteEl.id = 'mktNote';
+        noteEl.style.cssText = 'background:var(--bg-input);border-bottom:1px solid var(--border);padding:6px 32px;font-size:11px;color:var(--text-secondary);letter-spacing:0.06em;display:flex;align-items:center;gap:10px;';
+        document.querySelector('.mkt-strip').insertAdjacentElement('afterend', noteEl);
+      }
+      noteEl.innerHTML = `<span style="color:var(--amber);font-size:9px;letter-spacing:0.2em;font-weight:500;">MARKET SUMMARY</span><span>${d.market_note}</span>`;
+    }
+
+  } catch(err) {
+    fill.classList.remove('running');
+    btn.classList.remove('loading');
+    document.getElementById('mktUpdated').textContent = '載入失敗';
+    console.error('Market fetch error:', err);
+  }
+}
+
+// Auto-fetch on load
+window.addEventListener('load', () => { setTimeout(fetchMarketData, 800); });
+
+
 const zone = document.getElementById('uploadZone');
 zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
 zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
